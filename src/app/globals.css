@@ -1,0 +1,204 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ *
+ * Раздел 4 ТЗ — визуальный стиль
+ * ------------------------------------------------------------------ */
+
+@theme {
+  --color-void: #000000;
+  --color-ink: #ffffff;
+  --color-muted: #8fa3b8;
+  --color-accent: #38e1ff;
+  --color-accent-deep: #1a7fd4;
+  --color-line: rgba(120, 180, 230, 0.16);
+
+  --font-display: var(--font-space-grotesk), 'Segoe UI', system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, 'Cascadia Mono', monospace;
+}
+
+:root {
+  color-scheme: dark;
+  /* Текущая интенсивность помех — пишется из состояния сцены */
+  --glitch: 0;
+}
+
+html {
+  background-color: #000;
+  scroll-behavior: auto;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: var(--font-display);
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: rgba(56, 225, 255, 0.28);
+  color: #fff;
+}
+
+/* Тонкий скроллбар: полоса не должна спорить с чёрным фоном */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 225, 255, 0.25);
+}
+
+/* ------------------------------------------------------------------ *
+ * Раздел 7 ТЗ — glitch-эффект текста
+ *
+ * Три слоя: базовый и два цветовых клона со сдвигом. Величина сдвига идёт
+ * из --glitch, который синхронизирован с деформацией сферы: сильнее переход —
+ * заметнее помеха, после стабилизации формы текст чистый.
+ * ------------------------------------------------------------------ */
+
+.glitch {
+  position: relative;
+  display: inline-block;
+  --shift: calc(var(--glitch) * 0.16em);
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(var(--glitch) * 0.9);
+  mix-blend-mode: screen;
+}
+
+.glitch::before {
+  color: #38e1ff;
+  transform: translate3d(calc(var(--shift) * -1), 0, 0);
+  clip-path: polygon(0 var(--band-a, 4%), 100% var(--band-a, 4%), 100% 46%, 0 46%);
+}
+
+.glitch::after {
+  color: #ff2f6a;
+  transform: translate3d(var(--shift), 0, 0);
+  clip-path: polygon(0 54%, 100% 54%, 100% var(--band-b, 96%), 0 var(--band-b, 96%));
+}
+
+/* Всплеск помех на стыке состояний */
+.glitch-burst::before {
+  animation: glitch-band-a 0.28s steps(2, end) infinite;
+}
+.glitch-burst::after {
+  animation: glitch-band-b 0.34s steps(2, end) infinite;
+}
+
+@keyframes glitch-band-a {
+  0% {
+    --band-a: 4%;
+    transform: translate3d(calc(var(--shift) * -1), 0, 0);
+  }
+  50% {
+    --band-a: 22%;
+    transform: translate3d(calc(var(--shift) * -1.8), -1px, 0);
+  }
+  100% {
+    --band-a: 10%;
+    transform: translate3d(calc(var(--shift) * -0.6), 1px, 0);
+  }
+}
+
+@keyframes glitch-band-b {
+  0% {
+    --band-b: 96%;
+    transform: translate3d(var(--shift), 0, 0);
+  }
+  50% {
+    --band-b: 74%;
+    transform: translate3d(calc(var(--shift) * 1.7), 1px, 0);
+  }
+  100% {
+    --band-b: 88%;
+    transform: translate3d(calc(var(--shift) * 0.5), -1px, 0);
+  }
+}
+
+/* Цифровые помехи — короткие горизонтальные срезы поверх активного блока */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: -0.35em -0.6em;
+  pointer-events: none;
+  opacity: calc(var(--glitch) * 0.5);
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(56, 225, 255, 0.12) 0px,
+    rgba(56, 225, 255, 0.12) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  mix-blend-mode: screen;
+}
+
+/* ------------------------------------------------------------------ *
+ * Служебное
+ * ------------------------------------------------------------------ */
+
+.scroll-hint-beam {
+  animation: scroll-hint 1.8s ease-in-out infinite;
+}
+
+@keyframes scroll-hint {
+  0% {
+    transform: translateY(-100%);
+  }
+  60%,
+  100% {
+    transform: translateY(340%);
+  }
+}
+
+.hairline {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(120, 180, 230, 0.35),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch::before,
+  .glitch::after {
+    display: none;
+  }
+  .glitch-burst::before,
+  .glitch-burst::after {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Читаемость текста поверх сцены
+ *
+ * Сетка связей проходит прямо под абзацами, поэтому под текстовым блоком
+ * лежит мягкое затемнение. Оно без границ и без рамки — как локальное
+ * приглушение фона, а не как панель поверх сцены.
+ * ------------------------------------------------------------------ */
+
+.text-scrim::before {
+  content: '';
+  position: absolute;
+  inset: -2.5rem -3.5rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.62) 42%,
+    rgba(0, 0, 0, 0) 76%
+  );
+}
